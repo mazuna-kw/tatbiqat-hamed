@@ -46,6 +46,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.abs
 import kotlin.random.Random
+import kotlinx.coroutines.launch
 
 private val Ink = Color(0xFF111126)
 private val Panel = Color(0xFF20203D)
@@ -236,10 +237,20 @@ private fun MalikGame() {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                Text(if (won) "إنجاز رائع! 👑" else "انتهت اللعبة", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                                Text(if (won) "وصلت إلى $target أو أكثر" else "جرّب مرة أخرى لتحقق نتيجة أعلى", color = Color(0xFFD3D1F0))
+                                AnimatedVisibility(visible = true, enter = scaleIn(animationSpec = tween(500)) + fadeIn(), exit = scaleOut() + fadeOut()) {
+                                    Text(if (won) "👑 فتح بوابة التاج! 👑" else "انتهت اللعبة", color = if (won) Color(0xFFFFD76A) else Color.White, fontSize = 25.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+                                }
+                                Text(if (won) "إنجاز $playerName • المرحلة $level" else "لا تستسلم، كل ملك بدأ بمحاولة", color = Color(0xFFD3D1F0), textAlign = TextAlign.Center)
+                                if (won && combo >= 3) Text("🔥 سلسلة الدمج ×$combo!", color = Color(0xFFFFD76A), fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(12.dp))
-                                Button(onClick = { newGame() }) { Text("العب مجددًا") }
+                                if (won && level < 150) {
+                                    Button(onClick = { level++; prefs.edit().putInt("level", level).apply(); newGame() }) { Text("المرحلة التالية ← \${level + 1}") }
+                                } else if (won && level == 150) {
+                                    Text("🏆 أنت أسطورة الأرقام!", color = Color(0xFFFFD76A), fontWeight = FontWeight.Black)
+                                    Button(onClick = { level = 1; prefs.edit().putInt("level", 1).apply(); newGame() }) { Text("ابدأ رحلة جديدة") }
+                                } else {
+                                    Button(onClick = { newGame() }) { Text("حاول من جديد") }
+                                }
                             }
                         }
                     }
@@ -260,7 +271,10 @@ private fun MalikGame() {
             title = { Text("إعدادات اللعبة") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("مستوى الصعوبة")
+                    Text("اسم اللاعب")
+                    OutlinedTextField(value = nameDraft, onValueChange = { nameDraft = it.take(18) }, singleLine = true, label = { Text("اكتب اسمك") }, placeholder = { Text("ملك الأرقام") })
+                    Button(onClick = { playerName = nameDraft.trim(); prefs.edit().putString("playerName", playerName).apply() }, enabled = nameDraft.trim().isNotEmpty()) { Text("حفظ الاسم") }
+                    Text("الصعوبة ترتفع تلقائيًا مع كل مرحلة")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("easy" to "سهل", "normal" to "متوسط", "hard" to "صعب").forEach { (key, label) ->
                             FilterChip(selected = difficulty == key, onClick = { difficulty = key; prefs.edit().putString("difficulty", key).apply(); newGame() }, label = { Text(label) })
