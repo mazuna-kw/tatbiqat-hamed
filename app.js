@@ -7,9 +7,6 @@
   const reset = document.getElementById('reset-search');
   let allApps = [];
   let activeFilter = 'all';
-  const demoApps = [
-    {id:'alhasiba',name:'الحاسبة',slug:'alhasiba',category:'free',category_label:'مجانية',description:'آلة حاسبة عربية بعمليات أساسية وذاكرة وسجل للعمليات. رابط التنزيل سيظهر بعد نشر النسخة المستقرة.',version:'1.0',size_label:'—',icon_url:'',download_url:'',status:'pending',featured:true}
-  ];
   const esc = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const categoryLabel = c => ({free:'مجانية',plus:'بلس',modified:'معدلة'}[c] || 'تطبيق');
   function card(app) {
@@ -34,10 +31,10 @@
         allApps = data || [];
       } catch (e) {
         console.error('Catalog load failed:', e);
-        allApps = demoApps;
-        count.textContent = 'تعذر الاتصال بالمكتبة — تعرض نسخة تجريبية';
+        allApps = [];
+        count.textContent = 'تعذر الاتصال بالمكتبة؛ حاول تحديث الصفحة لاحقاً.';
       }
-    } else allApps = demoApps;
+    } else allApps = [];
     render();
   }
   document.querySelectorAll('.filter').forEach(btn => btn.addEventListener('click', () => {
