@@ -93,6 +93,12 @@ private fun MalikGame() {
     var nameDraft by remember { mutableStateOf(playerName) }
     var moveCount by remember { mutableIntStateOf(0) }
     var combo by remember { mutableIntStateOf(0) }
+    var coins by remember { mutableIntStateOf(prefs.getInt("coins", 0)) }
+    var dailyStreak by remember { mutableIntStateOf(prefs.getInt("dailyStreak", 0)) }
+    var rewardCoins by remember { mutableIntStateOf(0) }
+    var rewardDialog by remember { mutableStateOf(false) }
+    var shopOpen by remember { mutableStateOf(false) }
+    var rewardMessage by remember { mutableStateOf("") }
     val target = targetForLevel(level)
     var burstX by remember { mutableFloatStateOf(0.5f) }
     var burstY by remember { mutableFloatStateOf(0.5f) }
@@ -101,11 +107,23 @@ private fun MalikGame() {
     var won by remember { mutableStateOf(false) }
     var gameOver by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        val today = System.currentTimeMillis() / 86_400_000L
+        val lastDay = prefs.getLong("lastRewardDay", -1L)
+        if (lastDay != today) {
+            dailyStreak = if (lastDay == today - 1L) (dailyStreak + 1).coerceAtMost(7) else 1
+            rewardCoins = 40 + dailyStreak * 20
+            coins += rewardCoins
+            prefs.edit().putLong("lastRewardDay", today).putInt("dailyStreak", dailyStreak).putInt("coins", coins).apply()
+            rewardDialog = true
+        }
+    }
+
     fun persist() {
         prefs.edit().putInt("size", size).putString("board", JSONArray(board).toString())
             .putInt("score", score).putInt("best", best)
             .putBoolean("dark", dark).putBoolean("vibration", vibration).putString("difficulty", difficulty)
-            .putInt("level", level).putString("playerName", playerName).apply()
+            .putInt("level", level).putString("playerName", playerName).putInt("coins", coins).putInt("dailyStreak", dailyStreak).apply()
     }
     fun newGame(newSize: Int = size) {
         size = newSize
@@ -127,6 +145,11 @@ private fun MalikGame() {
         moveCount++
         combo = if (result.second > 0) combo + 1 else 0
         score += result.second + if (combo >= 3 && result.second > 0) combo * 25 else 0
+        if (result.second > 0) {
+            val earned = (result.second / 16).coerceAtLeast(2) + if (combo >= 3) combo * 5 else 0
+            coins += earned
+            rewardMessage = if (combo >= 3) "🔥 ضربة متتالية! +$earned جوهرة" else "✨ دمج مميز! +$earned جوهرة"
+        }
         if (score > best) best = score
         if (board.any { it >= target }) won = true
         gameOver = !hasMoves(board, size)
