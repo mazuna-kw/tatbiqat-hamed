@@ -3,14 +3,22 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
 
 permissions:
   contents: read
 
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -21,33 +29,49 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # setup-gradle configures Gradle caching; it does not guarantee a
-      # system Gradle executable. Install the pinned distribution explicitly.
-      - name: Install Gradle 8.9
+      - name: Install pinned Gradle 8.9
         shell: bash
         run: |
           set -euxo pipefail
-          curl --fail --location --retry 3 --output /tmp/gradle-8.9-bin.zip https://services.gradle.org/distributions/gradle-8.9-bin.zip
-          unzip -q /tmp/gradle-8.9-bin.zip -d "$RUNNER_TEMP"
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/gradle-8.9-bin.zip" https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          unzip -q "$RUNNER_TEMP/gradle-8.9-bin.zip" -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/gradle-8.9/bin" >> "$GITHUB_PATH"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
+      # Do not use android-actions/setup-android here: its current setup path
+      # attempts to install the obsolete SDK package named "tools", which
+      # causes "Failed to find package 'tools'" before the build can start.
+      # Use the SDK already installed on the pinned GitHub-hosted runner.
+      - name: Locate Android SDK tools
         shell: bash
         run: |
           set -euxo pipefail
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          test -d "$ANDROID_HOME"
+          find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -type f -name sdkmanager -print
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -n "$SDKMANAGER"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
 
-      - name: Verify toolchain
+      - name: Accept Android SDK licenses and install required packages
+        shell: bash
         run: |
+          set -euxo pipefail
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Verify build toolchain
+        shell: bash
+        run: |
+          set -euxo pipefail
           java -version
           gradle --version
-          sdkmanager --list_installed
+          "$SDKMANAGER" --list_installed
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/aapt"
 
       - name: Build debug APK
+        shell: bash
         run: gradle --no-daemon --stacktrace --warning-mode all assembleDebug
 
       - name: Upload APK
