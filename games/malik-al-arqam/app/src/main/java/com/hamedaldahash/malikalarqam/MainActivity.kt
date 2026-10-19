@@ -14,6 +14,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -27,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -76,8 +82,15 @@ private fun MalikGame() {
     var dark by remember { mutableStateOf(prefs.getBoolean("dark", true)) }
     var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
     var difficulty by remember { mutableStateOf(prefs.getString("difficulty", "normal") ?: "normal") }
+    var level by remember { mutableIntStateOf(prefs.getInt("level", 1).coerceIn(1, 150)) }
+    var playerName by remember { mutableStateOf(prefs.getString("playerName", "") ?: "") }
+    var nameDraft by remember { mutableStateOf(playerName) }
     var moveCount by remember { mutableIntStateOf(0) }
-    val target = when (difficulty) { "easy" -> 512; "hard" -> 4096; else -> 2048 }
+    var combo by remember { mutableIntStateOf(0) }
+    val target = targetForLevel(level)
+    val boardScale = remember { Animatable(1f) }
+    val boardNudge = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
     var settingsOpen by remember { mutableStateOf(false) }
     var won by remember { mutableStateOf(false) }
     var gameOver by remember { mutableStateOf(false) }
@@ -85,12 +98,15 @@ private fun MalikGame() {
     fun persist() {
         prefs.edit().putInt("size", size).putString("board", JSONArray(board).toString())
             .putInt("score", score).putInt("best", best)
-            .putBoolean("dark", dark).putBoolean("vibration", vibration).putString("difficulty", difficulty).apply()
+            .putBoolean("dark", dark).putBoolean("vibration", vibration).putString("difficulty", difficulty)
+            .putInt("level", level).putString("playerName", playerName).apply()
     }
     fun newGame(newSize: Int = size) {
         size = newSize
-        board = List(size * size) { 0 }.let { addRandom(addRandom(it, difficulty), difficulty) }
+        board = List(size * size) { 0 }.let { addRandom(addRandom(it, difficulty, level), difficulty, level) }
         score = 0
+        combo = 0
+        moveCount = 0
         undo = null
         won = false
         gameOver = false
@@ -101,9 +117,12 @@ private fun MalikGame() {
         val result = slide(board, size, direction)
         if (result.first == board) return
         undo = Snapshot(board, score)
-        board = addRandom(result.first, difficulty)
+        board = addRandom(result.first, difficulty, level)
         moveCount++
-        score += result.second
+        combo = if (result.second > 0) combo + 1 else 0
+        score += result.second + if (combo >= 3 && result.second > 0) combo * 25 else 0
+        scope.launch { boardScale.snapTo(0.965f); boardScale.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 650f)) }
+        scope.launch { boardNudge.snapTo(if (moveCount % 2 == 0) 10f else -10f); boardNudge.animateTo(0f, spring(dampingRatio = 0.28f, stiffness = 900f)) }
         if (score > best) best = score
         if (board.any { it >= target }) won = true
         gameOver = !hasMoves(board, size)
@@ -127,7 +146,8 @@ private fun MalikGame() {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("👑  ملك الأرقام", color = fg, fontSize = 27.sp, fontWeight = FontWeight.Black)
-                            Text("ادمج الأرقام واصنع الرقم المستهدف: $target", color = sub, fontSize = 14.sp)
+                            Text(if (playerName.isBlank()) "أهلاً بك يا ملك الأرقام" else "أهلاً $playerName 👑", color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("المرحلة $level من 150 • الهدف: $target", color = sub, fontSize = 14.sp)
                         }
                         IconButton(onClick = { settingsOpen = true }) {
                             Icon(Icons.Default.Settings, contentDescription = "الإعدادات", tint = fg)
@@ -163,7 +183,8 @@ private fun MalikGame() {
                     }
                     Spacer(Modifier.height(16.dp))
                     Box(
-                        Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(22.dp))
+                        Modifier.fillMaxWidth().aspectRatio(1f).graphicsLayer { scaleX = boardScale.value; scaleY = boardScale.value; translationX = boardNudge.value }
+                            .clip(RoundedCornerShape(22.dp))
                             .background(Brush.linearGradient(listOf(Color(0xFF28284B), Color(0xFF19192F))))
                             .padding(8.dp)
                             .pointerInput(size, board, gameOver, won) {
@@ -223,7 +244,9 @@ private fun MalikGame() {
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("اسحب اللوحة لتحريك الأرقام • كل حركة لها تأثير بصري", color = sub, fontSize = 13.sp, textAlign = TextAlign.Center)
+                    Text("اسحب اللوحة • اصنع سلسلة دمج لتحصل على نقاط إضافية", color = sub, fontSize = 13.sp, textAlign = TextAlign.Center)
+                    if (combo >= 2) Text("🔥 سلسلة الدمج ×$combo • مكافأة عند الدمج المتتالي", color = Color(0xFFFFC857), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("تقدّمك: $level / 150", color = sub, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
                     Text("برمجة حامد الدهاش", color = sub, fontSize = 12.sp)
                 }
@@ -289,6 +312,8 @@ private fun tileColor(n: Int): Color = when (n) {
     else -> Color(0xFFFFB547)
 }
 
+private fun targetForLevel(level: Int): Int = 1 shl (5 + ((level - 1) / 10).coerceAtMost(14))
+
 private fun loadBoard(raw: String?, size: Int): List<Int> {
     return try {
         val arr = JSONArray(raw ?: "")
@@ -296,11 +321,13 @@ private fun loadBoard(raw: String?, size: Int): List<Int> {
     } catch (_: Exception) { addRandom(addRandom(emptyBoard(size))) }
 }
 private fun emptyBoard(size: Int) = List(size * size) { 0 }
-private fun addRandom(board: List<Int>, difficulty: String = "normal"): List<Int> {
+private fun addRandom(board: List<Int>, difficulty: String = "normal", level: Int = 1): List<Int> {
     val empty = board.indices.filter { board[it] == 0 }
     if (empty.isEmpty()) return board
     val idx = empty.random()
-    return board.toMutableList().also { it[idx] = if (Random.nextFloat() < when (difficulty) { "easy" -> .82f; "hard" -> .96f; else -> .9f }) 2 else 4 }
+    val baseChance = when (difficulty) { "easy" -> .82f; "hard" -> .96f; else -> .9f }
+    val chanceOfTwo = (baseChance + (level - 1).coerceAtLeast(0) * 0.0005f).coerceAtMost(.985f)
+    return board.toMutableList().also { it[idx] = if (Random.nextFloat() < chanceOfTwo) 2 else 4 }
 }
 
 /** direction: 0 up, 1 right, 2 down, 3 left */
