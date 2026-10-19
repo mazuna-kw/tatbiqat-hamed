@@ -97,7 +97,7 @@ private fun MalikGame() {
         persist()
     }
     fun move(direction: Int) {
-        if (gameOver) return
+        if (gameOver || won) return
         val result = slide(board, size, direction)
         if (result.first == board) return
         undo = Snapshot(board, score)
