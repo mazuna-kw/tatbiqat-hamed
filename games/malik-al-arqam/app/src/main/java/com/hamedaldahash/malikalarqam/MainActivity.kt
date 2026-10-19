@@ -82,7 +82,7 @@ private fun MalikGame() {
     var undo by remember { mutableStateOf<Snapshot?>(null) }
     var dark by remember { mutableStateOf(prefs.getBoolean("dark", true)) }
     var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
-    var difficulty by remember { mutableStateOf(prefs.getString("difficulty", "normal") ?: "normal") }
+    var difficulty by remember { mutableStateOf(prefs.getString("difficulty", "easy") ?: "easy") }
     var level by remember { mutableIntStateOf(prefs.getInt("level", 1).coerceIn(1, 150)) }
     var playerName by remember { mutableStateOf(prefs.getString("playerName", "") ?: "") }
     var nameDraft by remember { mutableStateOf(playerName) }
@@ -277,12 +277,8 @@ private fun MalikGame() {
                     OutlinedTextField(value = nameDraft, onValueChange = { nameDraft = it.take(18) }, singleLine = true, label = { Text("اكتب اسمك") }, placeholder = { Text("ملك الأرقام") })
                     Button(onClick = { playerName = nameDraft.trim(); prefs.edit().putString("playerName", playerName).apply() }, enabled = nameDraft.trim().isNotEmpty()) { Text("حفظ الاسم") }
                     Text("الصعوبة ترتفع تلقائيًا مع كل مرحلة")
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf("easy" to "سهل", "normal" to "متوسط", "hard" to "صعب").forEach { (key, label) ->
-                            FilterChip(selected = difficulty == key, onClick = { difficulty = key; prefs.edit().putString("difficulty", key).apply(); newGame() }, label = { Text(label) })
-                        }
-                    }
-                    Text("الهدف: $target")
+                    Text("تبدأ الرحلة سهلة، وتتصاعد الصعوبة تدريجيًا حتى المرحلة 150")
+                    Text("الهدف الحالي: $target")
                     Text("حجم اللوحة")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(3, 4, 5).forEach { n ->
