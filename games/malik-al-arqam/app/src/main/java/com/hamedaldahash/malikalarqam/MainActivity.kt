@@ -35,6 +35,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -96,7 +97,6 @@ private fun MalikGame() {
     var burstX by remember { mutableFloatStateOf(0.5f) }
     var burstY by remember { mutableFloatStateOf(0.5f) }
     var burstId by remember { mutableIntStateOf(0) }
-    val scope = rememberCoroutineScope()
     var settingsOpen by remember { mutableStateOf(false) }
     var won by remember { mutableStateOf(false) }
     var gameOver by remember { mutableStateOf(false) }
@@ -141,7 +141,7 @@ private fun MalikGame() {
     MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = Violet, background = Ink, surface = Panel)
         else lightColorScheme(primary = Violet, background = Color(0xFFF3F3FC), surface = Color.White)) {
         CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
-            Box(Modifier.fillMaxSize().background(bg)) {
+            Box(Modifier.fillMaxSize().background(if (dark) Brush.verticalGradient(listOf(Color(0xFF101126), Color(0xFF191C3D), Color(0xFF102A40))) else Brush.verticalGradient(listOf(Color(0xFFF9F5FF), Color(0xFFE8F5FF), Color(0xFFFFF1F7)))) {
                 Column(
                     Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()
                         .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -225,7 +225,8 @@ private fun MalikGame() {
                                         val value = board[row * size + col]
                                         Box(
                                             Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(11.dp))
-                                                .background(tileColor(value)),
+                                                .background(if (value == 0) Brush.linearGradient(listOf(Color(0xFF242943), Color(0xFF1B2039))) else Brush.linearGradient(listOf(tileColor(value), tileColor(value).copy(alpha = 0.78f), tileColor(value).copy(alpha = 0.94f))))
+                                                .border(1.dp, if (value == 0) Color(0xFF586080).copy(alpha = 0.28f) else Color.White.copy(alpha = 0.30f), RoundedCornerShape(11.dp)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             AnimatedContent(value, transitionSpec = { (fadeIn(animationSpec = tween(170)) + slideInVertically(animationSpec = tween(170)) { it / 5 }) togetherWith (fadeOut(animationSpec = tween(110)) + slideOutVertically(animationSpec = tween(110)) { -it / 5 }) }, label = "tile") { n ->
