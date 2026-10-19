@@ -148,7 +148,9 @@ private fun MalikGame() {
                         Column(Modifier.weight(1f)) {
                             Text("👑  ملك الأرقام", color = fg, fontSize = 27.sp, fontWeight = FontWeight.Black)
                             Text(if (playerName.isBlank()) "أهلاً بك يا ملك الأرقام" else "أهلاً $playerName 👑", color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            Text("المرحلة $level من 150 • الهدف: $target", color = sub, fontSize = 14.sp)
+                            AnimatedContent(targetState = level, transitionSpec = { (slideInVertically(animationSpec = tween(320)) { it / 2 } + fadeIn()) togetherWith (slideOutVertically(animationSpec = tween(220)) { -it / 2 } + fadeOut()) }, label = "stage-transition") { stage ->
+                                Text("المرحلة $stage من 150 • الهدف: \${targetForLevel(stage)}", color = sub, fontSize = 14.sp)
+                            }
                         }
                         IconButton(onClick = { settingsOpen = true }) {
                             Icon(Icons.Default.Settings, contentDescription = "الإعدادات", tint = fg)
