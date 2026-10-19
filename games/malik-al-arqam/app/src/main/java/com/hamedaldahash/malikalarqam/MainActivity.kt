@@ -10,6 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -186,7 +188,7 @@ private fun MalikGame() {
                                                 .background(tileColor(value)),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            AnimatedContent(value, transitionSpec = { tween(100) togetherWith tween(100) }, label = "tile") { n ->
+                                            AnimatedContent(value, transitionSpec = { fadeIn(animationSpec = tween(100)) togetherWith fadeOut(animationSpec = tween(100)) }, label = "tile") { n ->
                                                 if (n > 0) Text(
                                                     n.toString(),
                                                     color = if (n <= 4) Color(0xFF37334E) else Color.White,
