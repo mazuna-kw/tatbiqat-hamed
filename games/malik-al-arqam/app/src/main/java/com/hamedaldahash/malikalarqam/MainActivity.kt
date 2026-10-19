@@ -183,11 +183,20 @@ private fun MalikGame() {
                         }
                     }
                     Spacer(Modifier.height(22.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         ScoreCard("النقاط", score, Modifier.weight(1f))
                         ScoreCard("أفضل نتيجة", best, Modifier.weight(1f))
+                        ScoreCard("💎 الجواهر", coins, Modifier.weight(1f))
                     }
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(10.dp))
+                    Button(onClick = { shopOpen = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB63B91))) {
+                        Text("🎁 متجر التعزيزات والمفاجآت", fontWeight = FontWeight.ExtraBold)
+                    }
+                    if (rewardMessage.isNotBlank()) {
+                        Text(rewardMessage, color = Color(0xFFFFD166), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { newGame() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) {
                             Icon(Icons.Default.Refresh, contentDescription = null)
@@ -300,6 +309,69 @@ private fun MalikGame() {
                 }
             }
         }
+    }
+
+    if (rewardDialog) {
+        AlertDialog(
+            onDismissRequest = { rewardDialog = false },
+            containerColor = Color(0xFF29244F),
+            title = { Text("🎁 مكافأة العودة!", color = Color(0xFFFFD166), fontWeight = FontWeight.Black) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("🔥 سلسلة الدخول: $dailyStreak أيام", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("+$rewardCoins 💎 جوهرة مجانية", color = Color(0xFF5CF2B7), fontSize = 22.sp, fontWeight = FontWeight.Black)
+                    Text("ارجع غدًا لتحصل على مكافأة أكبر، حتى 7 أيام متتالية.", color = Color(0xFFD8D4F4), textAlign = TextAlign.Center)
+                }
+            },
+            confirmButton = { Button(onClick = { rewardDialog = false }) { Text("استلام المكافأة ✨") } }
+        )
+    }
+
+    if (shopOpen) {
+        AlertDialog(
+            onDismissRequest = { shopOpen = false },
+            containerColor = Color(0xFF29244F),
+            title = { Text("🛍️ متجر ملك الأرقام", color = Color(0xFFFFD166), fontWeight = FontWeight.Black) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("رصيدك: $coins 💎", color = Color(0xFF5CF2B7), fontWeight = FontWeight.Bold)
+                    Text("🔨 المطرقة — 80 جوهرة", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("تحذف أصغر رقم لتفتح مساحة جديدة.", color = Color(0xFFD8D4F4), fontSize = 12.sp)
+                    Button(onClick = {
+                        if (coins >= 80 && board.any { it > 0 } && !won && !gameOver) {
+                            val index = board.indices.filter { board[it] > 0 }.minByOrNull { board[it] }!!
+                            board = board.toMutableList().also { it[index] = 0 }
+                            coins -= 80
+                            undo = null
+                            persist()
+                            shopOpen = false
+                            rewardMessage = "🔨 استخدمت المطرقة!"
+                        }
+                    }, enabled = coins >= 80 && board.any { it > 0 } && !won && !gameOver,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6))) {
+                        Text("استخدم المطرقة • 80 💎")
+                    }
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+                    Text("🌪️ إعادة ترتيب — 120 جوهرة", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("تعيد ترتيب الأرقام الحالية عشوائيًا دون تغيير مجموعها.", color = Color(0xFFD8D4F4), fontSize = 12.sp)
+                    Button(onClick = {
+                        if (coins >= 120 && !won && !gameOver) {
+                            board = board.shuffled()
+                            coins -= 120
+                            undo = null
+                            persist()
+                            shopOpen = false
+                            rewardMessage = "🌪️ تمت إعادة ترتيب اللوحة!"
+                        }
+                    }, enabled = coins >= 120 && !won && !gameOver,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF168EA8))) {
+                        Text("إعادة ترتيب • 120 💎")
+                    }
+                    Text("اكسب الجواهر من الدمج المميز وسلاسل الدمج، أو من مكافأة الدخول اليومية.", color = Color(0xFFFFD166), fontSize = 12.sp)
+                }
+            },
+            confirmButton = { TextButton(onClick = { shopOpen = false }) { Text("إغلاق", color = Color.White) } }
+        )
     }
 
     if (settingsOpen) {
