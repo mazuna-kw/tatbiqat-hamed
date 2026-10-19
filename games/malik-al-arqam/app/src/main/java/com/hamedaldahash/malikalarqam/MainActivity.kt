@@ -216,8 +216,19 @@ private fun MalikGame() {
                             }
                         }
                     }
-                    Spacer(Modifier.height(15.dp))
-                    Text("اسحب اللوحة للأعلى أو الأسفل أو الجانبين لتحريك الأرقام", color = sub, fontSize = 13.sp, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(12.dp))
+                    Text("حرّك الأرقام بالسحب أو باستخدام الأزرار", color = sub, fontSize = 13.sp, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(onClick = { move(3) }, modifier = Modifier.weight(1f), enabled = !gameOver && !won) { Text("←") }
+                        OutlinedButton(onClick = { move(0) }, modifier = Modifier.weight(1f), enabled = !gameOver && !won) { Text("↑") }
+                        OutlinedButton(onClick = { move(2) }, modifier = Modifier.weight(1f), enabled = !gameOver && !won) { Text("↓") }
+                        OutlinedButton(onClick = { move(1) }, modifier = Modifier.weight(1f), enabled = !gameOver && !won) { Text("→") }
+                    }
                     Spacer(Modifier.weight(1f))
                     Text("برمجة حامد الدهاش", color = sub, fontSize = 12.sp)
                 }
