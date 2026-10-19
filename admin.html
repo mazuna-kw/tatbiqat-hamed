@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101322"><title>إدارة التطبيقات | تطبيقاتي</title><link rel="stylesheet" href="styles.css"></head>
+<body class="admin-body">
+<header class="admin-header"><a class="brand" href="./"><span class="brand-mark"><svg viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="14"/><path d="M14 18h20M14 24h14M14 30h17"/></svg></span><span><strong>تطبيقاتي</strong><small>لوحة إدارة المكتبة</small></span></a><a href="./" class="text-link">عرض الموقع ↗</a></header>
+<main class="admin-main">
+  <div class="admin-title"><span class="eyebrow">مساحة الإدارة</span><h1>إدارة التطبيقات</h1><p>أضف تطبيقاً، ارفع ملف APK وأيقونته، وحدد بيانات صفحة التنزيل.</p></div>
+  <section class="admin-panel admin-login" id="login-panel"><h2>تسجيل دخول المدير</h2><p>تسجيل الدخول محمي بواسطة Supabase Auth. لا تشارك بيانات الدخول مع أي شخص.</p><div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" placeholder="admin@example.com"></div><div class="field" style="margin-top:12px"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" placeholder="••••••••"></div><div class="admin-actions"><button class="button button-dark" id="login-btn">تسجيل الدخول</button><button class="button button-muted" id="logout-btn">تسجيل الخروج</button></div><div class="admin-status" id="auth-status" role="status"></div><div class="security-note">هذه الواجهة لا تحتوي على مفتاح إداري سري. يلزم إعداد Supabase وإضافة حسابك إلى جدول app_admins قبل رفع الملفات.</div></section>
+  <div id="dashboard" class="admin-hidden">
+    <section class="admin-panel"><h2>إضافة تطبيق جديد</h2><p>املأ البيانات الأساسية. لن يظهر التطبيق في الصفحة العامة إلا عند اختيار حالة «منشور».</p>
+      <form id="app-form"><div class="form-grid">
+        <div class="field"><label for="name">اسم التطبيق *</label><input id="name" name="name" required maxlength="90" placeholder="مثال: الحاسبة"></div>
+        <div class="field"><label for="slug">معرّف الرابط *</label><input id="slug" name="slug" required pattern="[a-z0-9-]+" maxlength="90" placeholder="alhasiba"><span class="file-hint">أحرف إنجليزية صغيرة وأرقام وشرطات فقط.</span></div>
+        <div class="field"><label for="category">التصنيف *</label><select id="category" name="category"><option value="free">تطبيق مجاني</option><option value="plus">تطبيق بلس</option><option value="modified">تطبيق معدل</option></select></div>
+        <div class="field"><label for="version">رقم الإصدار</label><input id="version" name="version" maxlength="30" placeholder="1.0.0"></div>
+        <div class="field full"><label for="description">وصف التطبيق *</label><textarea id="description" name="description" required maxlength="500" placeholder="اشرح وظيفة التطبيق ومميزاته بوضوح."></textarea></div>
+        <div class="field"><label for="size-label">حجم الملف (اختياري)</label><input id="size-label" name="size_label" maxlength="30" placeholder="مثال: 8.4 MB"></div>
+        <div class="field"><label for="status">حالة العرض</label><select id="status" name="status"><option value="draft">مسودة</option><option value="published">منشور</option></select></div>
+        <div class="field"><label for="apk">ملف APK *</label><input id="apk" name="apk" type="file" accept=".apk,application/vnd.android.package-archive" required><span class="file-hint">اختر APK من مشروع تملك حق توزيعه. الحد الأقصى الموصى به 100 MB.</span></div>
+        <div class="field"><label for="icon">أيقونة التطبيق (اختياري)</label><input id="icon" name="icon" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><span class="file-hint">يفضل PNG مربعة. الحد الأقصى 2 MB.</span></div>
+        <div class="field full"><label><input id="featured" type="checkbox" style="width:auto;vertical-align:middle"> إظهار التطبيق ضمن التطبيقات المميزة</label></div>
+      </div><div class="admin-actions"><button class="button button-dark" type="submit" id="save-app">رفع التطبيق وحفظه</button><button class="button button-muted" type="reset">تفريغ الحقول</button></div><div class="admin-status" id="upload-status" role="status"></div></form>
+    </section>
+    <section class="admin-panel"><h2>التطبيقات في المكتبة</h2><p>راجع حالة التطبيقات المسجلة. حذف التطبيق يزيل بياناته فقط؛ الملفات قد تحتاج إلى حذف منفصل من التخزين.</p><div class="admin-list" id="admin-app-list"></div><div class="admin-status" id="list-status" role="status"></div></section>
+  </div>
+</main>
+<footer class="admin-footer">برمجة <strong>حامد الدهاش</strong> · <a href="./">العودة إلى تطبيقاتي</a></footer>
+<script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="admin.js"></script>
+</body></html>
