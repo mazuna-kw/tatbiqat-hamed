@@ -20,6 +20,9 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,6 +55,7 @@ private val Ink = Color(0xFF111126)
 private val Panel = Color(0xFF20203D)
 private val Violet = Color(0xFF7C4DFF)
 private val Cyan = Color(0xFF35D7FF)
+private val JewelColors = listOf(Color(0xFF35D7FF), Color(0xFF8B5CF6), Color(0xFFFF5DA2), Color(0xFFFFD166), Color(0xFF5CF2B7), Color(0xFF62A8FF))
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,8 +93,9 @@ private fun MalikGame() {
     var moveCount by remember { mutableIntStateOf(0) }
     var combo by remember { mutableIntStateOf(0) }
     val target = targetForLevel(level)
-    val boardScale = remember { Animatable(1f) }
-    val boardNudge = remember { Animatable(0f) }
+    var burstX by remember { mutableFloatStateOf(0.5f) }
+    var burstY by remember { mutableFloatStateOf(0.5f) }
+    var burstId by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     var settingsOpen by remember { mutableStateOf(false) }
     var won by remember { mutableStateOf(false) }
@@ -122,8 +127,6 @@ private fun MalikGame() {
         moveCount++
         combo = if (result.second > 0) combo + 1 else 0
         score += result.second + if (combo >= 3 && result.second > 0) combo * 25 else 0
-        scope.launch { boardScale.snapTo(0.965f); boardScale.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 650f)) }
-        scope.launch { boardNudge.snapTo(if (moveCount % 2 == 0) 10f else -10f); boardNudge.animateTo(0f, spring(dampingRatio = 0.28f, stiffness = 900f)) }
         if (score > best) best = score
         if (board.any { it >= target }) won = true
         gameOver = !hasMoves(board, size)
@@ -186,22 +189,29 @@ private fun MalikGame() {
                     }
                     Spacer(Modifier.height(16.dp))
                     Box(
-                        Modifier.fillMaxWidth().aspectRatio(1f).graphicsLayer { scaleX = boardScale.value; scaleY = boardScale.value; translationX = boardNudge.value }
+                        Modifier.fillMaxWidth().aspectRatio(1f)
                             .clip(RoundedCornerShape(22.dp))
-                            .background(Brush.linearGradient(listOf(Color(0xFF28284B), Color(0xFF19192F))))
+                            .background(Brush.linearGradient(listOf(Color(0xFF27205A), Color(0xFF101A36), Color(0xFF182C4C))))
                             .padding(8.dp)
                             .pointerInput(size, board, gameOver, won) {
                                 var dx = 0f
                                 var dy = 0f
+                                var lastX = 0f
+                                var lastY = 0f
                                 detectDragGestures(
                                     onDragStart = { dx = 0f; dy = 0f },
                                     onDrag = { change, drag ->
-                                        dx += drag.x; dy += drag.y; change.consume()
+                                        dx += drag.x; dy += drag.y
+                                        lastX = change.position.x; lastY = change.position.y
+                                        change.consume()
                                     },
                                     onDragEnd = {
                                         if (maxOf(abs(dx), abs(dy)) > 24f) {
                                             val dir = if (abs(dx) > abs(dy)) { if (dx > 0) 1 else 3 }
                                             else { if (dy > 0) 2 else 0 }
+                                            burstX = (lastX / size.width.coerceAtLeast(1)).coerceIn(0f, 1f)
+                                            burstY = (lastY / size.height.coerceAtLeast(1)).coerceIn(0f, 1f)
+                                            burstId++
                                             move(dir)
                                         }
                                     }
@@ -233,6 +243,7 @@ private fun MalikGame() {
                                 }
                             }
                         }
+                        SwipeBurst(Modifier.fillMaxSize(), burstX, burstY, burstId)
                         if (gameOver || won) {
                             Column(
                                 Modifier.fillMaxSize().background(Color(0xDD111126), RoundedCornerShape(18.dp)),
@@ -302,7 +313,7 @@ private fun MalikGame() {
 
 @Composable
 private fun ScoreCard(title: String, value: Int, modifier: Modifier = Modifier) {
-    Column(modifier.clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Color(0xFF302653), Color(0xFF20203D)))).padding(14.dp),
+    Column(modifier.clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Color(0xFF473477), Color(0xFF252A52), Color(0xFF173D58)))).padding(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, color = Color(0xFFC8C2E8), fontSize = 12.sp)
         Text(value.toString(), color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
@@ -310,18 +321,51 @@ private fun ScoreCard(title: String, value: Int, modifier: Modifier = Modifier) 
 }
 
 private fun tileColor(n: Int): Color = when (n) {
-    0 -> Color(0xFF2A2947)
-    2 -> Color(0xFFE9E5FF)
-    4 -> Color(0xFFD2C8FF)
-    8 -> Color(0xFFB6A0FF)
-    16 -> Color(0xFF9577FF)
-    32 -> Color(0xFF7955F5)
-    64 -> Color(0xFF6542E8)
-    128 -> Color(0xFF2879E8)
-    256 -> Color(0xFF199DD8)
-    512 -> Color(0xFF10B7D4)
-    1024 -> Color(0xFF00BFA5)
-    else -> Color(0xFFFFB547)
+    0 -> Color(0xFF202541)
+    2 -> Color(0xFFFFF3C4)
+    4 -> Color(0xFFFFD6A5)
+    8 -> Color(0xFFFFADAD)
+    16 -> Color(0xFFFF8FAB)
+    32 -> Color(0xFFE879F9)
+    64 -> Color(0xFFC084FC)
+    128 -> Color(0xFF9B8CFF)
+    256 -> Color(0xFF818CF8)
+    512 -> Color(0xFF60A5FA)
+    1024 -> Color(0xFF38BDF8)
+    2048 -> Color(0xFF2DD4BF)
+    4096 -> Color(0xFF4ADE80)
+    8192 -> Color(0xFFA3E635)
+    16384 -> Color(0xFFFACC15)
+    32768 -> Color(0xFFFB923C)
+    65536 -> Color(0xFFFB7185)
+    131072 -> Color(0xFFF472B6)
+    262144 -> Color(0xFFDA77F2)
+    524288 -> Color(0xFFFFD166)
+    else -> JewelColors[(31 - Integer.numberOfLeadingZeros(n.coerceAtLeast(1))) % JewelColors.size]
+}
+
+@Composable
+private fun SwipeBurst(modifier: Modifier, originX: Float, originY: Float, trigger: Int) {
+    val progress = remember { Animatable(1f) }
+    LaunchedEffect(trigger) {
+        if (trigger > 0) { progress.snapTo(0f); progress.animateTo(1f, animationSpec = tween(620)) }
+    }
+    val colors = remember(trigger) { List(30) { JewelColors.random() } }
+    Canvas(modifier) {
+        if (trigger <= 0 || progress.value >= 1f) return@Canvas
+        val p = progress.value
+        val cx = size.width * originX
+        val cy = size.height * originY
+        colors.forEachIndexed { i, color ->
+            val angle = i * 2.39996f
+            val distance = (18f + (i % 7) * 7f) * p
+            val x = cx + kotlin.math.cos(angle) * distance
+            val y = cy + kotlin.math.sin(angle) * distance
+            val radius = (5f - 3.8f * p).coerceAtLeast(0.7f) * (0.75f + (i % 3) * 0.2f)
+            drawCircle(color.copy(alpha = (1f - p) * 0.95f), radius, Offset(x, y))
+            if (i % 4 == 0) drawCircle(Color.White.copy(alpha = (1f - p) * 0.8f), radius * 1.7f, Offset(x, y), style = Stroke(width = 1.2f))
+        }
+    }
 }
 
 private fun targetForLevel(level: Int): Int = 1 shl (5 + ((level - 1) / 10).coerceAtMost(14))
