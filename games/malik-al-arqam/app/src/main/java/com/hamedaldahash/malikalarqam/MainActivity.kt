@@ -175,7 +175,7 @@ private fun MalikGame() {
                             Text("👑  ملك الأرقام", color = fg, fontSize = 27.sp, fontWeight = FontWeight.Black)
                             Text(if (playerName.isBlank()) "أهلاً بك يا ملك الأرقام" else "أهلاً $playerName 👑", color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             AnimatedContent(targetState = level, transitionSpec = { (slideInVertically(animationSpec = tween(320)) { it / 2 } + fadeIn()) togetherWith (slideOutVertically(animationSpec = tween(220)) { -it / 2 } + fadeOut()) }, label = "stage-transition") { stage ->
-                                Text("المرحلة $stage من 150 • الهدف: \${targetForLevel(stage)}", color = sub, fontSize = 14.sp)
+                                Text("المرحلة $stage من 150 • الهدف: ${targetForLevel(stage)}", color = sub, fontSize = 14.sp)
                             }
                         }
                         IconButton(onClick = { settingsOpen = true }) {
@@ -290,7 +290,7 @@ private fun MalikGame() {
                                 if (won && combo >= 3) Text("🔥 سلسلة الدمج ×$combo!", color = Color(0xFFFFD76A), fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(12.dp))
                                 if (won && level < 150) {
-                                    Button(onClick = { level++; prefs.edit().putInt("level", level).apply(); newGame() }) { Text("المرحلة التالية ← \${level + 1}") }
+                                    Button(onClick = { level++; prefs.edit().putInt("level", level).apply(); newGame() }) { Text("المرحلة التالية ← ${level + 1}") }
                                 } else if (won && level == 150) {
                                     Text("🏆 أنت أسطورة الأرقام!", color = Color(0xFFFFD76A), fontWeight = FontWeight.Black)
                                     Button(onClick = { level = 1; prefs.edit().putInt("level", 1).apply(); newGame() }) { Text("ابدأ رحلة جديدة") }
