@@ -99,6 +99,7 @@ private fun MalikGame() {
     var rewardDialog by remember { mutableStateOf(false) }
     var shopOpen by remember { mutableStateOf(false) }
     var rewardMessage by remember { mutableStateOf("") }
+    var tutorialOpen by remember { mutableStateOf(!prefs.getBoolean("tutorialDone", false)) }
     val target = targetForLevel(level)
     var burstX by remember { mutableFloatStateOf(0.5f) }
     var burstY by remember { mutableFloatStateOf(0.5f) }
@@ -164,7 +165,7 @@ private fun MalikGame() {
     MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = Violet, background = Ink, surface = Panel)
         else lightColorScheme(primary = Violet, background = Color(0xFFF3F3FC), surface = Color.White)) {
         CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
-            Box(Modifier.fillMaxSize().background(if (dark) Brush.verticalGradient(listOf(Color(0xFF101126), Color(0xFF191C3D), Color(0xFF102A40))) else Brush.verticalGradient(listOf(Color(0xFFF9F5FF), Color(0xFFE8F5FF), Color(0xFFFFF1F7)))) {
+            Box(Modifier.fillMaxSize().background(if (dark) Brush.verticalGradient(listOf(Color(0xFF101126), Color(0xFF191C3D), Color(0xFF102A40))) else Brush.verticalGradient(listOf(Color(0xFFF9F5FF), Color(0xFFE8F5FF), Color(0xFFFFF1F7))))) {
                 Column(
                     Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()
                         .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -241,8 +242,8 @@ private fun MalikGame() {
                                         if (maxOf(abs(dx), abs(dy)) > 24f) {
                                             val dir = if (abs(dx) > abs(dy)) { if (dx > 0) 1 else 3 }
                                             else { if (dy > 0) 2 else 0 }
-                                            burstX = (lastX / size.width.coerceAtLeast(1)).coerceIn(0f, 1f)
-                                            burstY = (lastY / size.height.coerceAtLeast(1)).coerceIn(0f, 1f)
+                                            burstX = (lastX / this.size.width.coerceAtLeast(1)).coerceIn(0f, 1f)
+                                            burstY = (lastY / this.size.height.coerceAtLeast(1)).coerceIn(0f, 1f)
                                             burstId++
                                             move(dir)
                                         }
@@ -277,6 +278,12 @@ private fun MalikGame() {
                             }
                         }
                         SwipeBurst(Modifier.fillMaxSize(), burstX, burstY, burstId)
+                        if (tutorialOpen) {
+                            TutorialOverlay(modifier = Modifier.fillMaxSize(), onStart = {
+                                tutorialOpen = false
+                                prefs.edit().putBoolean("tutorialDone", true).apply()
+                            })
+                        }
                         if (gameOver || won) {
                             Column(
                                 Modifier.fillMaxSize().background(Color(0xDD111126), RoundedCornerShape(18.dp)),
@@ -523,4 +530,45 @@ private fun vibrate(context: Context) {
         if (android.os.Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(22, 55))
         else @Suppress("DEPRECATION") vibrator.vibrate(22)
     } catch (_: Exception) { }
+}
+
+
+@Composable
+private fun TutorialOverlay(modifier: Modifier = Modifier, onStart: () -> Unit) {
+    var direction by remember { mutableIntStateOf(0) }
+    val handX = remember { Animatable(0f) }
+    val handY = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            direction = 0
+            handX.snapTo(-34f); handY.snapTo(0f)
+            handX.animateTo(34f, tween(650)); kotlinx.coroutines.delay(180)
+            direction = 1
+            handX.snapTo(34f); handY.snapTo(0f)
+            handX.animateTo(-34f, tween(650)); kotlinx.coroutines.delay(180)
+            direction = 2
+            handX.snapTo(0f); handY.snapTo(34f)
+            handY.animateTo(-34f, tween(650)); kotlinx.coroutines.delay(180)
+            direction = 3
+            handX.snapTo(0f); handY.snapTo(-34f)
+            handY.animateTo(34f, tween(650)); kotlinx.coroutines.delay(180)
+        }
+    }
+    Box(modifier = modifier.background(Color(0xE6111126), RoundedCornerShape(18.dp)).padding(18.dp), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("👑", fontSize = 42.sp)
+            Text("دليل اللعب", color = Color(0xFFFFD166), fontSize = 25.sp, fontWeight = FontWeight.Black)
+            Text("حرّك الأرقام بسحب اللوحة بإصبعك في أي اتجاه", color = Color.White, textAlign = TextAlign.Center, fontSize = 15.sp)
+            Box(Modifier.size(124.dp).clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(Color(0xFF40306E), Color(0xFF20294E)))), contentAlignment = Alignment.Center) {
+                Text(when (direction) { 0 -> "⬅️"; 1 -> "➡️"; 2 -> "⬆️"; else -> "⬇️" }, color = Color.White, fontSize = 32.sp)
+                Text("👆", modifier = Modifier.offset(handX.value.dp, handY.value.dp), fontSize = 36.sp)
+            }
+            Text("⬅️ يسار   ➡️ يمين", color = Color(0xFF8BE9FF), fontWeight = FontWeight.Bold)
+            Text("⬆️ للأعلى   ⬇️ للأسفل", color = Color(0xFF8BE9FF), fontWeight = FontWeight.Bold)
+            Text("اجمع رقمين متساويين لتكوين رقم أكبر، وواصل الدمج لتحصل على النقاط والجواهر.", color = Color(0xFFD8D4F4), textAlign = TextAlign.Center, fontSize = 13.sp)
+            Button(onClick = onStart, shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Violet)) {
+                Text("فهمت، لنبدأ! ✨", fontWeight = FontWeight.ExtraBold)
+            }
+        }
+    }
 }
